@@ -127,3 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Others
+/resources
+/resources/*
+/resources/*.yml
+*.yml
+# local database for testing
+debug.db
