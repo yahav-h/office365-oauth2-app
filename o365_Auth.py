@@ -86,7 +86,22 @@ def callback():
         return {"stored": False}, 400
     # return a json response
     print("[§] JWT Stored!")
-    return {"stored": True}, 200
+    return {"stored": True}, 201
+
+
+@app.route("/createToken", methods=["GET"])
+def first_time_create_token():
+    global driver, email
+    try:
+        email = request.args.get("email")
+        driver = getwebdriver()
+        # Loop through each user in users
+        harvest_O365_token(email)
+        # cleanup all cookies and close admin_driver session
+        cleanup(driver)
+        return {"stored": True}, 201
+    except:
+        return {"stored": False}, 400
 
 
 def get_token_from_code(code, expected_state, scopes):
