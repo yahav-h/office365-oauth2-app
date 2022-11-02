@@ -113,6 +113,7 @@ def refresh_token_for_user():
             with get_session() as Session:
                 dao.token = new_token
                 Session.add(dao)
+            dto.token = new_token
         except:
             return {}, 400
     return {"id": dto.uid, "user": dto.user, "token": dto.decompress_token()}, 200
