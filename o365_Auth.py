@@ -13,7 +13,7 @@ from dto import UserDataTransferObject
 from locators import Office365AdminLoginTags
 from urllib.parse import quote, unquote
 
-PORT = 8000
+PORT = 5000
 HOST = '0.0.0.0'
 ADMIN_USER_PREFIX = "user1@"
 PASSWORD = getclientconfig().get("security").get("password")
