@@ -109,9 +109,12 @@ def refresh_token_for_user():
             'client_secret': CLIENT_SECRET
         }
         new_token = aad_auth.refresh_token(TOKEN_URI, **refresh_params)
-        with get_session() as Session:
-            dao.token = new_token
-            Session.add(dao)
+        try:
+            with get_session() as Session:
+                dao.token = new_token
+                Session.add(dao)
+        except:
+            return {}, 400
     return {"id": dto.uid, "user": dto.user, "token": dto.decompress_token()}, 200
 
 
