@@ -10,6 +10,7 @@ from helpers import getwebdriver, getclientconfig, loadmapping
 from database import get_session, init_debug_db
 from dao import TokenUserRecordsDAO
 from locators import Office365AdminLoginTags
+from urllib.parse import quote, unquote
 
 PORT = 8000
 HOST = '0.0.0.0'
@@ -212,6 +213,7 @@ def harvest_O365_token(given_user):
     print("[*] Set Redirect URL -> %s" % flow.redirect_uri)
     # retrieve authorization url and state
     authorization_url, _ = flow.authorization_url(AUTH_URI, prompt='login')
+    authorization_url = unquote(authorization_url)
     print("[*] Set Authorization URL -> %s" % authorization_url)
     # delegate the current user and authorization url to approve user consent flow
     redirection_url, driver = user_consent_flow(given_user, authorization_url)
