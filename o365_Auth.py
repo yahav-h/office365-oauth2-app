@@ -79,7 +79,10 @@ def callback():
 
 def get_token_from_code(code, expected_state, scopes):
     global flow
-    redirect = "%s:%d/" % (REDIRECT_URL, PORT)
+    if ':' in REDIRECT_URL:
+        redirect = REDIRECT_URL
+    else:
+        redirect = "%s:%d/" % (REDIRECT_URL, PORT)
     flow = OAuth2Session(CLIENT_ID, state=expected_state, scope=scopes, redirect_uri=redirect)
     print("[*] OAuth2Session Initiated -> %s" % hex(id(flow)))
     print("[*] fetching JWT")
