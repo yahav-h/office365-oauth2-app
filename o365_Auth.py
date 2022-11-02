@@ -140,33 +140,35 @@ def cleanup(this_driver):
 
 def user_consent_flow(target_user, authorization_url):
     global driver
-    # create a WebDriver for user consent flow
-    driver = getwebdriver()
     # navigate to the authorization url
     driver.get(authorization_url)
     print("[*] Authorization URL Navigation Successful! ")
     time.sleep(10)
+    """
+        Complete the user consent flow using Selenium . 
+        this is the only method available since Google 
+        force us the give User Consent by Logging In via Browser
+    """
+    if driver.find_element(*Office365AdminLoginTags.EMAIL_FIELD).is_displayed():
+        driver.find_element(*Office365AdminLoginTags.EMAIL_FIELD).send_keys(target_user)
+        print("[+] set username -> %s" % target_user)
+    time.sleep(5)
+    if driver.find_element(*Office365AdminLoginTags.NEXT_BUTTON).is_displayed():
+        driver.find_element(*Office365AdminLoginTags.NEXT_BUTTON).click()
+    time.sleep(5)
+    if driver.find_element(*Office365AdminLoginTags.PASSWORD_FIELD).is_displayed():
+        driver.find_element(*Office365AdminLoginTags.PASSWORD_FIELD).send_keys(PASSWORD)
+        print("[+] set password -> %s" % PASSWORD)
+    time.sleep(5)
+    if driver.find_element(*Office365AdminLoginTags.SIGN_IN_BUTTON).is_displayed():
+        driver.find_element(*Office365AdminLoginTags.SIGN_IN_BUTTON).click()
     try:
-        """
-            Complete the user consent flow using Selenium . 
-            this is the only method available since Google 
-            force us the give User Consent by Logging In via Browser
-        """
-        if driver.find_element(*Office365AdminLoginTags.EMAIL_FIELD).is_displayed():
-            driver.find_element(*Office365AdminLoginTags.EMAIL_FIELD).send_keys(target_user)
-            print("[+] set username -> %s" % target_user)
         time.sleep(5)
-        if driver.find_element(*Office365AdminLoginTags.NEXT_BUTTON).is_displayed():
-            driver.find_element(*Office365AdminLoginTags.NEXT_BUTTON).click()
-        time.sleep(5)
-        if driver.find_element(*Office365AdminLoginTags.PASSWORD_FIELD).is_displayed():
-            driver.find_element(*Office365AdminLoginTags.PASSWORD_FIELD).send_keys(PASSWORD)
-            print("[+] set password -> %s" % PASSWORD)
-        time.sleep(5)
-        if driver.find_element(*Office365AdminLoginTags.SIGN_IN_BUTTON).is_displayed():
-            driver.find_element(*Office365AdminLoginTags.SIGN_IN_BUTTON).click()
-    except Exception as e:
-        print(e)
+        if driver.find_element(*Office365AdminLoginTags.YES_BUTTON).is_displayed():
+            driver.find_element(*Office365AdminLoginTags.YES_BUTTON).click()
+    except Exception:
+        print("[!] Stay Login dialog did not displayed")
+        assert "code" in driver.current_url,  driver.current_url
     # catch the current url
     url = driver.current_url
     return url, driver
