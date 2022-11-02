@@ -28,6 +28,8 @@ driver = None
 admin_driver = None
 app = Flask(__name__)
 flow = None
+email = None
+
 
 def extract_params(url):
     code, state, scope = None, None, None
@@ -53,6 +55,7 @@ def init_database():
 
 @app.route("/", methods=["GET"])
 def callback():
+    global email
     """
     a callback which occurs after we finish the User Consent Flow .
     the OAuth2 application will redirect a response with the following
@@ -67,19 +70,20 @@ def callback():
     # we extract a JWT by using the State, Code and Scopes
     pkl_token = get_token_from_code(code=code, expected_state=state, scopes=scope)
     # searching the user inside the database records
-    dao = TokenUserRecordsDAO.query.filter_by(user=user).first()
+    dao = TokenUserRecordsDAO.query.filter_by(user=email).first()
     # if found we update the JWT
     if dao:
         dao.token = pkl_token
     # is not , we create a new record with the relevant JWT
     else:
-        dao = TokenUserRecordsDAO(user=user, token=pkl_token)
+        dao = TokenUserRecordsDAO(user=email, token=pkl_token)
     # and adding the new Data Access Object into the database
     try:
         with get_session() as Session:
             Session.add(dao)
     except Exception as e:
         print("[!] Error " + str(e))
+        return {"stored": False}, 400
     # return a json response
     print("[§] JWT Stored!")
     return {"stored": True}, 200
