@@ -200,7 +200,10 @@ def harvest_O365_token(given_user):
     # Create an entry for InstalledAppFlow to bypass OAuth2 WebApp (using Desktop App)
     print("[*] Office365FlowObject -> %s" % hex(id(flow)))
     # override the redirection url to http://localhost:8000
-    flow.redirect_uri = "%s:%d" % (REDIRECT_URL, PORT)
+    if ':' not in REDIRECT_URL:
+        flow.redirect_uri = "%s:%d" % (REDIRECT_URL, PORT)
+    else:
+        flow.redirect_uri = REDIRECT_URL
     print("[*] Set Redirect URL -> %s" % flow.redirect_uri)
     # retrieve authorization url and state
     authorization_url, _ = flow.authorization_url(AUTH_URI, prompt='login')
