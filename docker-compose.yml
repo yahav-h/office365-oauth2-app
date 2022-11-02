@@ -1,0 +1,10 @@
+version: '3.3'
+services:
+  oauth-office365-app:
+    build: .
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app
+    depends_on:
+      - mysql

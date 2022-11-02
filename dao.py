@@ -1,8 +1,8 @@
 from database import Base, Column, Text, BLOB, Integer
 
 
-class TokenUserRecordsDAO(Base):
-    __tablename__ = "ms_graph_token"
+class UserDataAccessObject(Base):
+    __tablename__ = "users"
     id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False)
     user = Column(Text, unique=True, nullable=False)
     token = Column(BLOB, unique=True, nullable=False)
@@ -11,4 +11,4 @@ class TokenUserRecordsDAO(Base):
         self.user = user
         self.token = token
 
-    def __repr__(self): return "<TokenUserRecordDAO %r>" % self.__dict__
+    def __repr__(self): return "<User %r>" % self.__dict__

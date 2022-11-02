@@ -33,6 +33,7 @@ def init_debug_db():
     global Base
     Base.metadata.create_all(bind=engine)
 
+
 @contextmanager
 def get_session():
     global db_session

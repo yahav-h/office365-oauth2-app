@@ -8,10 +8,12 @@ from flask import Flask, request
 from werkzeug.serving import make_server
 from helpers import getwebdriver, getclientconfig, loadmapping
 from database import get_session, init_debug_db
-from dao import TokenUserRecordsDAO
+from dao import UserDataAccessObject
+from dto import UserDataTransferObject
 from locators import Office365AdminLoginTags
+from urllib.parse import quote, unquote
 
-PORT = 8000
+PORT = 5000
 HOST = '0.0.0.0'
 ADMIN_USER_PREFIX = "user1@"
 PASSWORD = getclientconfig().get("security").get("password")
@@ -27,6 +29,8 @@ driver = None
 admin_driver = None
 app = Flask(__name__)
 flow = None
+email = None
+
 
 def extract_params(url):
     code, state, scope = None, None, None
@@ -40,11 +44,19 @@ def extract_params(url):
             scope = _.split('=')[-1].split(',').pop()
     return code, state, scope
 
+
 if '--debug' in sys.argv and bool(int(sys.argv[sys.argv.index('--debug')+1])):
     init_debug_db()
 
+
+@app.before_first_request
+def init_database():
+    init_debug_db()
+
+
 @app.route("/", methods=["GET"])
 def callback():
+    global email
     """
     a callback which occurs after we finish the User Consent Flow .
     the OAuth2 application will redirect a response with the following
@@ -59,27 +71,86 @@ def callback():
     # we extract a JWT by using the State, Code and Scopes
     pkl_token = get_token_from_code(code=code, expected_state=state, scopes=scope)
     # searching the user inside the database records
-    dao = TokenUserRecordsDAO.query.filter_by(user=user).first()
+    dao = UserDataAccessObject.query.filter_by(user=email).first()
     # if found we update the JWT
     if dao:
         dao.token = pkl_token
     # is not , we create a new record with the relevant JWT
     else:
-        dao = TokenUserRecordsDAO(user=user, token=pkl_token)
+        dao = UserDataAccessObject(user=email, token=pkl_token)
     # and adding the new Data Access Object into the database
     try:
         with get_session() as Session:
             Session.add(dao)
     except Exception as e:
         print("[!] Error " + str(e))
+        return {"stored": False}, 400
     # return a json response
     print("[§] JWT Stored!")
-    return {"stored": True}, 200
+    return {"stored": True}, 201
+
+@app.route("/refreshToken", methods=["GET"])
+def refresh_token_for_user():
+    user_mail = request.args.get("email")
+    dao = UserDataAccessObject.query.filter_by(user=user_mail).first()
+    if not dao:
+        return {}, 404
+    dto = UserDataTransferObject(uid=dao.id, user=dao.user, token=dao.token)
+    token = dto.decompress_token()
+    now = time.time()
+    expire_time = token.get('expires_at') - 300
+    if now >= expire_time:
+        aad_auth = OAuth2Session(
+            CLIENT_ID, token=token,
+            scope=None, redirect_uri=REDIRECT_URL
+        )
+        refresh_params = {
+            'client_id': CLIENT_ID,
+            'client_secret': CLIENT_SECRET
+        }
+        new_token = aad_auth.refresh_token(TOKEN_URI, **refresh_params)
+        try:
+            with get_session() as Session:
+                dao.token = new_token
+                Session.add(dao)
+            dto.token = new_token
+        except:
+            return {}, 400
+    return {"id": dto.uid, "user": dto.user, "token": dto.decompress_token()}, 200
+
+
+@app.route("/createToken", methods=["GET"])
+def first_time_create_token():
+    global driver, email
+    try:
+        email = request.args.get("email")
+        driver = getwebdriver()
+        # Loop through each user in users
+        harvest_O365_token(email)
+        # cleanup all cookies and close admin_driver session
+        cleanup(driver)
+        return {"stored": True}, 201
+    except:
+        return {"stored": False}, 400
+
+
+@app.route("/users", methods=["GET"])
+def get_user_data():
+    global driver, flow
+    user_mail = request.args.get("email")
+    dao = UserDataAccessObject.query.filter_by(user=user_mail).first()
+    if not dao:
+        return {}, 404
+    dto = UserDataTransferObject(uid=dao.id, user=dao.user, token=dao.token)
+    return {"id": dto.uid, "user": dto.user, "token": dto.decompress_token()}, 200
 
 
 def get_token_from_code(code, expected_state, scopes):
     global flow
-    redirect = "%s:%d/" % (REDIRECT_URL, PORT)
+    if ':' in REDIRECT_URL:
+        redirect = REDIRECT_URL
+    else:
+        redirect = "%s:%d/" % (REDIRECT_URL, PORT)
     flow = OAuth2Session(CLIENT_ID, state=expected_state, scope=scopes, redirect_uri=redirect)
     print("[*] OAuth2Session Initiated -> %s" % hex(id(flow)))
     print("[*] fetching JWT")
@@ -116,6 +187,7 @@ class ServerThread(Thread):
         print("[!] HTTP listener shutdown")
         self.srv.shutdown()
 
+
 def cleanup(this_driver):
     print("[!] Cleanup started for %s" % hex(id(this_driver)))
     # check if this_driver exist
@@ -125,38 +197,42 @@ def cleanup(this_driver):
         # close the session
         this_driver.quit()
 
+
 def user_consent_flow(target_user, authorization_url):
     global driver
-    # create a WebDriver for user consent flow
-    driver = getwebdriver()
     # navigate to the authorization url
     driver.get(authorization_url)
     print("[*] Authorization URL Navigation Successful! ")
     time.sleep(10)
+    """
+        Complete the user consent flow using Selenium . 
+        this is the only method available since Google 
+        force us the give User Consent by Logging In via Browser
+    """
+    if driver.find_element(*Office365AdminLoginTags.EMAIL_FIELD).is_displayed():
+        driver.find_element(*Office365AdminLoginTags.EMAIL_FIELD).send_keys(target_user)
+        print("[+] set username -> %s" % target_user)
+    time.sleep(5)
+    if driver.find_element(*Office365AdminLoginTags.NEXT_BUTTON).is_displayed():
+        driver.find_element(*Office365AdminLoginTags.NEXT_BUTTON).click()
+    time.sleep(5)
+    if driver.find_element(*Office365AdminLoginTags.PASSWORD_FIELD).is_displayed():
+        driver.find_element(*Office365AdminLoginTags.PASSWORD_FIELD).send_keys(PASSWORD)
+        print("[+] set password -> %s" % PASSWORD)
+    time.sleep(5)
+    if driver.find_element(*Office365AdminLoginTags.SIGN_IN_BUTTON).is_displayed():
+        driver.find_element(*Office365AdminLoginTags.SIGN_IN_BUTTON).click()
     try:
-        """
-            Complete the user consent flow using Selenium . 
-            this is the only method available since Google 
-            force us the give User Consent by Logging In via Browser
-        """
-        if driver.find_element(*Office365AdminLoginTags.EMAIL_FIELD).is_displayed():
-            driver.find_element(*Office365AdminLoginTags.EMAIL_FIELD).send_keys(target_user)
-            print("[+] set username -> %s" % target_user)
         time.sleep(5)
-        if driver.find_element(*Office365AdminLoginTags.NEXT_BUTTON).is_displayed():
-            driver.find_element(*Office365AdminLoginTags.NEXT_BUTTON).click()
-        time.sleep(5)
-        if driver.find_element(*Office365AdminLoginTags.PASSWORD_FIELD).is_displayed():
-            driver.find_element(*Office365AdminLoginTags.PASSWORD_FIELD).send_keys(PASSWORD)
-            print("[+] set password -> %s" % PASSWORD)
-        time.sleep(5)
-        if driver.find_element(*Office365AdminLoginTags.SIGN_IN_BUTTON).is_displayed():
-            driver.find_element(*Office365AdminLoginTags.SIGN_IN_BUTTON).click()
-    except Exception as e:
-        print(e)
+        if driver.find_element(*Office365AdminLoginTags.YES_BUTTON).is_displayed():
+            driver.find_element(*Office365AdminLoginTags.YES_BUTTON).click()
+    except Exception:
+        print("[!] Stay Login dialog did not displayed")
+        assert "code" in driver.current_url,  driver.current_url
     # catch the current url
     url = driver.current_url
     return url, driver
+
 
 def get_users(farm=None, clusters=None):
     print("[!] Reading mapping file...")
@@ -191,22 +267,26 @@ def get_users(farm=None, clusters=None):
             break
     return admin_usr, all_users
 
+
 def harvest_O365_token(given_user):
     global driver, flow
     flow = OAuth2Session(CLIENT_ID, scope=SCOPES, redirect_uri=REDIRECT_URL)
     # Create an entry for InstalledAppFlow to bypass OAuth2 WebApp (using Desktop App)
     print("[*] Office365FlowObject -> %s" % hex(id(flow)))
     # override the redirection url to http://localhost:8000
-    flow.redirect_uri = "%s:%d" % (REDIRECT_URL, PORT)
+    if ':' not in REDIRECT_URL:
+        flow.redirect_uri = "%s:%d" % (REDIRECT_URL, PORT)
+    else:
+        flow.redirect_uri = REDIRECT_URL
     print("[*] Set Redirect URL -> %s" % flow.redirect_uri)
     # retrieve authorization url and state
     authorization_url, _ = flow.authorization_url(AUTH_URI, prompt='login')
+    authorization_url = unquote(authorization_url)
     print("[*] Set Authorization URL -> %s" % authorization_url)
     # delegate the current user and authorization url to approve user consent flow
     redirection_url, driver = user_consent_flow(given_user, authorization_url)
     print("[@] REDIRECT -> %s" % redirection_url)
-    # cleaning all cookies from the current user session
-    cleanup(driver)
+
 
 def separate_o365_id_from(given_user):
     # splits the email and user ID
@@ -215,6 +295,7 @@ def separate_o365_id_from(given_user):
     print("[*] USER -> %s" % u)
     print("[*] UID  -> %s" % uid)
     return u, uid
+
 
 if __name__ == "__main__":
     import os
@@ -256,6 +337,7 @@ if __name__ == "__main__":
     if args.debug and bool(int(args.debug)):
         print('[!] [DEBUG %s]' % bool(int(args.debug)))
         print('[*] We will use LOCALHOST database!')
+        init_debug_db()
     else:
         print('[!] [DEBUG %s]' % bool(int(args.debug)))
         print('[*] We will use PRODUCTION database!')
