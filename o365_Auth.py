@@ -269,6 +269,7 @@ if __name__ == "__main__":
     if args.debug and bool(int(args.debug)):
         print('[!] [DEBUG %s]' % bool(int(args.debug)))
         print('[*] We will use LOCALHOST database!')
+        init_debug_db()
     else:
         print('[!] [DEBUG %s]' % bool(int(args.debug)))
         print('[*] We will use PRODUCTION database!')
