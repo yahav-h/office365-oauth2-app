@@ -40,6 +40,7 @@ def extract_params(url):
             scope = _.split('=')[-1].split(',').pop()
     return code, state, scope
 
+
 if '--debug' in sys.argv and bool(int(sys.argv[sys.argv.index('--debug')+1])):
     init_debug_db()
 
@@ -119,6 +120,7 @@ class ServerThread(Thread):
         print("[!] HTTP listener shutdown")
         self.srv.shutdown()
 
+
 def cleanup(this_driver):
     print("[!] Cleanup started for %s" % hex(id(this_driver)))
     # check if this_driver exist
@@ -127,6 +129,7 @@ def cleanup(this_driver):
         this_driver.delete_all_cookies()
         # close the session
         this_driver.quit()
+
 
 def user_consent_flow(target_user, authorization_url):
     global driver
@@ -161,6 +164,7 @@ def user_consent_flow(target_user, authorization_url):
     url = driver.current_url
     return url, driver
 
+
 def get_users(farm=None, clusters=None):
     print("[!] Reading mapping file...")
     print("[!] Using FARM %s" % farm)
@@ -194,6 +198,7 @@ def get_users(farm=None, clusters=None):
             break
     return admin_usr, all_users
 
+
 def harvest_O365_token(given_user):
     global driver, flow
     flow = OAuth2Session(CLIENT_ID, scope=SCOPES, redirect_uri=REDIRECT_URL)
@@ -211,8 +216,7 @@ def harvest_O365_token(given_user):
     # delegate the current user and authorization url to approve user consent flow
     redirection_url, driver = user_consent_flow(given_user, authorization_url)
     print("[@] REDIRECT -> %s" % redirection_url)
-    # cleaning all cookies from the current user session
-    cleanup(driver)
+
 
 def separate_o365_id_from(given_user):
     # splits the email and user ID
@@ -221,6 +225,7 @@ def separate_o365_id_from(given_user):
     print("[*] USER -> %s" % u)
     print("[*] UID  -> %s" % uid)
     return u, uid
+
 
 if __name__ == "__main__":
     import os
