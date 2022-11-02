@@ -8,7 +8,8 @@ from flask import Flask, request
 from werkzeug.serving import make_server
 from helpers import getwebdriver, getclientconfig, loadmapping
 from database import get_session, init_debug_db
-from dao import TokenUserRecordsDAO
+from dao import UserDataAccessObject
+from dto import UserDataTransferObject
 from locators import Office365AdminLoginTags
 from urllib.parse import quote, unquote
 
@@ -70,13 +71,13 @@ def callback():
     # we extract a JWT by using the State, Code and Scopes
     pkl_token = get_token_from_code(code=code, expected_state=state, scopes=scope)
     # searching the user inside the database records
-    dao = TokenUserRecordsDAO.query.filter_by(user=email).first()
+    dao = UserDataAccessObject.query.filter_by(user=email).first()
     # if found we update the JWT
     if dao:
         dao.token = pkl_token
     # is not , we create a new record with the relevant JWT
     else:
-        dao = TokenUserRecordsDAO(user=email, token=pkl_token)
+        dao = UserDataAccessObject(user=email, token=pkl_token)
     # and adding the new Data Access Object into the database
     try:
         with get_session() as Session:
@@ -87,6 +88,31 @@ def callback():
     # return a json response
     print("[§] JWT Stored!")
     return {"stored": True}, 201
+
+@app.route("/refreshToken", methods=["GET"])
+def refresh_token_for_user():
+    user_mail = request.args.get("email")
+    dao = UserDataAccessObject.query.filter_by(user=user_mail).first()
+    if not dao:
+        return {}, 404
+    dto = UserDataTransferObject(uid=dao.id, user=dao.user, token=dao.token)
+    token = dto.decompress_token()
+    now = time.time()
+    expire_time = token.get('expires_at') - 300
+    if now >= expire_time:
+        aad_auth = OAuth2Session(
+            CLIENT_ID, token=token,
+            scope=None, redirect_uri=REDIRECT_URL
+        )
+        refresh_params = {
+            'client_id': CLIENT_ID,
+            'client_secret': CLIENT_SECRET
+        }
+        new_token = aad_auth.refresh_token(TOKEN_URI, **refresh_params)
+        with get_session() as Session:
+            dao.token = new_token
+            Session.add(dao)
+    return {"id": dto.uid, "user": dto.user, "token": dto.decompress_token()}, 200
 
 
 @app.route("/createToken", methods=["GET"])
@@ -102,6 +128,17 @@ def first_time_create_token():
         return {"stored": True}, 201
     except:
         return {"stored": False}, 400
+
+
+@app.route("/users", methods=["GET"])
+def get_user_data():
+    global driver, flow
+    user_mail = request.args.get("email")
+    dao = UserDataAccessObject.query.filter_by(user=user_mail).first()
+    if not dao:
+        return {}, 404
+    dto = UserDataTransferObject(uid=dao.id, user=dao.user, token=dao.token)
+    return {"id": dto.uid, "user": dto.user, "token": dto.decompress_token()}, 200
 
 
 def get_token_from_code(code, expected_state, scopes):
