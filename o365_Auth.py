@@ -111,12 +111,12 @@ def refresh_token_for_user():
         new_token = aad_auth.refresh_token(TOKEN_URI, **refresh_params)
         try:
             with get_session() as Session:
-                dao.token = new_token
+                dao.token = dumps(new_token)
                 Session.add(dao)
             dto.token = new_token
         except:
             return {}, 400
-    return {"id": dto.uid, "user": dto.user, "token": dto.decompress_token()}, 200
+    return {"id": dto.uid, "user": dto.user, "token": dto.token}, 200
 
 
 @app.route("/createToken", methods=["GET"])
