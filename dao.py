@@ -1,11 +1,11 @@
-from database import Base, Column, Text, BLOB, Integer
+from database import Base, Column, VARCHAR, LargeBinary, Integer
 
 
 class UserDataAccessObject(Base):
-    __tablename__ = "users"
+    __tablename__ = "users_tbl"
     id = Column(Integer, primary_key=True, autoincrement=True, unique=True, nullable=False)
-    user = Column(Text, unique=True, nullable=False)
-    token = Column(BLOB, unique=True, nullable=False)
+    user = Column(VARCHAR(512), unique=True, nullable=False)
+    token = Column(LargeBinary, nullable=False)
 
     def __init__(self, user=None, token=None):
         self.user = user
