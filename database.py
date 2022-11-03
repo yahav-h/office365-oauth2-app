@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Column, Text, BLOB, Integer
+from sqlalchemy import create_engine, Column, Text, BLOB, Integer, VARCHAR, LargeBinary
 from sqlalchemy.orm import scoped_session, sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
 from helpers import getclientconfig
@@ -16,9 +16,11 @@ if '--debug' in sys.argv and bool(int(sys.argv[sys.argv.index('--debug')+1])):
     Base.query = db_session.query_property()
 else:
     dbinfo = f"mysql+pymysql://%s:%s@%s:%s/%s" % (
-            getclientconfig().get("database").get("user"), getclientconfig().get("database").get("passwd"),
-            getclientconfig().get("database").get("host"), getclientconfig().get("database").get("port"),
-            getclientconfig().get("database").get("dbname")
+        getclientconfig().get("database").get("user"),
+        getclientconfig().get("database").get("passwd"),
+        getclientconfig().get("database").get("host"),
+        getclientconfig().get("database").get("port"),
+        getclientconfig().get("database").get("dbname")
     )
     engine = create_engine(
         dbinfo,
