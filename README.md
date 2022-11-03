@@ -23,12 +23,18 @@
  $ ./venv3/bin/python3 -m pip install -r dependencies.txt
 ```
 
-#### 4. Harvesting Tokens
+#### 4. Harvesting Tokens AS Script
 ```shell
   # Using on PRODUCTION database
   $ ./venv3/bin/python3 ./o365_Auth.py --farm farm-1 --clusters c1,c2,c3
   # Using on DEV database
   $ ./venv3/bin/python3 ./o365_Auth.py --farm farm-1 --clusters c1,c2,c3 --debug 1 
+```
+
+#### 5. Starting a Web Server
+```shell
+ # Starting a web server 
+ $ ./venv3/bin/python3 ./o365_Service.py
 ```
 ---
 
@@ -36,6 +42,8 @@
 - you should create a `resources` folder within the main project directory.
 - the `resources` folder must contain the below configuration files templates.  
 #### Configuration File : `resources/properties.yml`
+- local database is created when `database.host` key IS `null` value
+- remote database connection is created when `database.host` key IS NOT `null` value
 ```yaml
 # this configuration file should be edited prior to the execution
 database:
@@ -55,7 +63,7 @@ oauth:
     token_uri: "https://login.microsoftonline.com/common/oauth2/v2.0/token"
     base_url: "https://graph.microsoft.com/v1.0/"
     redirect_uris:
-      - "http://localhost:8000/"
+      - "http://localhost/"
 ```
 
 #### Configuration File : `resources/mapping.yml`
