@@ -1,7 +1,7 @@
 import sys
 import time
 import urllib
-from pickle import dumps
+from pickle import dumps, loads
 from threading import Thread
 from requests_oauthlib import OAuth2Session
 from flask import Flask, request
@@ -13,7 +13,7 @@ from dto import UserDataTransferObject
 from locators import Office365AdminLoginTags
 from urllib.parse import quote, unquote
 
-PORT = 5000
+PORT = 80
 HOST = '0.0.0.0'
 ADMIN_USER_PREFIX = "user1@"
 PASSWORD = getclientconfig().get("security").get("password")
@@ -96,12 +96,12 @@ def refresh_token_for_user():
     if not dao:
         return {}, 404
     dto = UserDataTransferObject(uid=dao.id, user=dao.user, token=dao.token)
-    token = dto.decompress_token()
+    dto.token = loads(dto.token)
     now = time.time()
-    expire_time = token.get('expires_at') - 300
+    expire_time = dto.token.get('expires_at') - 300
     if now >= expire_time:
         aad_auth = OAuth2Session(
-            CLIENT_ID, token=token,
+            CLIENT_ID, token=dto.token,
             scope=None, redirect_uri=REDIRECT_URL
         )
         refresh_params = {
