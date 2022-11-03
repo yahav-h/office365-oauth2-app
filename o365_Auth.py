@@ -139,7 +139,8 @@ def get_user_data():
     if not dao:
         return {}, 404
     dto = UserDataTransferObject(uid=dao.id, user=dao.user, token=dao.token)
-    return {"id": dto.uid, "user": dto.user, "token": dto.decompress_token()}, 200
+    dto.token = loads(dto.token)
+    return {"id": dto.uid, "user": dto.user, "token": dto.token}, 200
 
 
 def get_token_from_code(code, expected_state, scopes):
