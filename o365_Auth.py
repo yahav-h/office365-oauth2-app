@@ -45,9 +45,6 @@ def extract_params(url):
     return code, state, scope
 
 
-if '--debug' in sys.argv and bool(int(sys.argv[sys.argv.index('--debug')+1])):
-    init_debug_db()
-
 
 @app.before_first_request
 def init_database():
