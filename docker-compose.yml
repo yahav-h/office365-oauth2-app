@@ -6,5 +6,20 @@ services:
       - "5000:5000"
     volumes:
       - .:/app
-    depends_on:
-      - mysql
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_DB: tokens
+      MYSQL_PASSWORD: AvananLab123
+  mysql:
+    image: mysql:5.7
+    ports:
+      - "3306:3306"
+    volumes:
+      - tokens-mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: AvananLab123
+      MYSQL_DATABASE: tokens
+volumes:
+  tokens-mysql-data:
