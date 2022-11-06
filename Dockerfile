@@ -12,6 +12,7 @@ COPY ./database.py /app/database.py
 COPY ./dependencies.txt /app/dependencies.txt
 COPY ./o365_Auth.py /app/o365_Auth.py
 COPY ./o365_Service.py /app/o365_Service.py
+COPY ./logs/runtime.log /app/logs/runtime.log
 
 RUN pip install -r /app/dependencies.txt
 
