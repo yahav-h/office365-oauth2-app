@@ -9,6 +9,8 @@ from yaml import load, Loader
 proj_root = dirname(abspath(__file__))
 
 
+def get_logs_dir(): return join(proj_root, "logs")
+
 def loadmapping() -> dict:
     data = None
     with open(join(proj_root, 'resources', 'mapping.yml'), 'r') as out_stream:

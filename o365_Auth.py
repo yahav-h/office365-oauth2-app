@@ -6,12 +6,26 @@ from threading import Thread
 from requests_oauthlib import OAuth2Session
 from flask import Flask, request
 from werkzeug.serving import make_server
-from helpers import getwebdriver, getclientconfig, loadmapping
+from helpers import getwebdriver, getclientconfig, loadmapping, get_logs_dir
 from database import get_session, init_debug_db
 from dao import UserDataAccessObject
 from dto import UserDataTransferObject
 from locators import Office365AdminLoginTags
 from urllib.parse import quote, unquote
+from logging.handlers import RotatingFileHandler
+import logging
+
+
+logging.Formatter(logging.BASIC_FORMAT)
+logger = logging.getLogger('ServiceLogger')
+logger.setLevel(logging.DEBUG)
+handler = RotatingFileHandler(
+    filename='%s/runtime.log' % get_logs_dir(),
+    maxBytes=8182,
+    backupCount=5,
+)
+logger.addHandler(handler)
+
 
 PORT = 80
 HOST = '0.0.0.0'
@@ -45,10 +59,10 @@ def extract_params(url):
     return code, state, scope
 
 
-
 @app.before_first_request
 def init_database():
     init_debug_db()
+    logger.info("database initialized")
 
 
 @app.route("/", methods=["GET"])
@@ -89,9 +103,12 @@ def callback():
 @app.route("/refreshToken", methods=["GET"])
 def refresh_token_for_user():
     user_mail = request.args.get("email")
+    logger.info("refresh_token_for_user (params: %s)" %user_mail)
     dao = UserDataAccessObject.query.filter_by(user=user_mail).first()
     if not dao:
-        return {}, 404
+        logger.info("no such email in database, return ( {}, 404 )")
+        response = {}, 400
+        return response
     dto = UserDataTransferObject(uid=dao.id, user=dao.user, token=dao.token)
     dto.token = loads(dto.token)
     now = time.time()
@@ -113,36 +130,51 @@ def refresh_token_for_user():
             dto.token = new_token
         except Exception as e:
             print("Error", str(e))
-            return {}, 400
-    return {"id": dto.uid, "user": dto.user, "token": dto.token}, 200
+            logger.error("%s" % str(e))
+            response = {"stored": False}, 400
+            logger.info("not data found -> %r" % response)
+            return response
+    response = {"id": dto.uid, "user": dto.user, "token": dto.token}, 200
+    logger.info("data found -> %r" % response)
+    return response
 
 
 @app.route("/createToken", methods=["GET"])
 def first_time_create_token():
     global driver, email
+    email = request.args.get("email")
+    logger.info("first_time_create_token (params: %s)" % email)
     try:
-        email = request.args.get("email")
         driver = getwebdriver()
         # Loop through each user in users
         harvest_O365_token(email)
         # cleanup all cookies and close admin_driver session
         cleanup(driver)
-        return {"stored": True}, 201
+        response = {"stored": True}, 201
+        logger.info("data found -> %r" % response)
+        return response
     except Exception as e:
         print("Error", str(e))
-        return {"stored": False}, 400
+        logger.error("%s" % str(e))
+        response = {"stored": False}, 400
+        logger.info("not data found -> %r" % response)
+        return response
 
 
 @app.route("/users", methods=["GET"])
 def get_user_data():
     global driver, flow
     user_mail = request.args.get("email")
+    logger.info("get_user_data (params: %s)" % user_mail)
     dao = UserDataAccessObject.query.filter_by(user=user_mail).first()
     if not dao:
+        logger.info("no such email in database, return ( {}, 404 )")
         return {}, 404
     dto = UserDataTransferObject(uid=dao.id, user=dao.user, token=dao.token)
     dto.token = loads(dto.token)
-    return {"id": dto.uid, "user": dto.user, "token": dto.token}, 200
+    response = {"id": dto.uid, "user": dto.user, "token": dto.token}, 200
+    logger.info("data found -> %r" % response)
+    return response
 
 
 def get_token_from_code(code, expected_state, scopes):
