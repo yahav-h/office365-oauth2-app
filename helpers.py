@@ -1,7 +1,5 @@
-from os import getcwd
 from os.path import join, dirname, abspath
 from selenium import webdriver
-from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 from yaml import load, Loader
