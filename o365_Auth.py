@@ -132,10 +132,10 @@ def refresh_token_for_user():
             print("Error", str(e))
             logger.error("%s" % str(e))
             response = {"stored": False}, 400
-            logger.info("not data found -> %r" % response)
+            logger.info("not data found -> %s" % str(response))
             return response
     response = {"id": dto.uid, "user": dto.user, "token": dto.token}, 200
-    logger.info("data found -> %r" % response)
+    logger.info("data found -> %s" % str(response))
     return response
 
 
@@ -151,13 +151,13 @@ def first_time_create_token():
         # cleanup all cookies and close admin_driver session
         cleanup(driver)
         response = {"stored": True}, 201
-        logger.info("data found -> %r" % response)
+        logger.info("data found -> %s" % str(response))
         return response
     except Exception as e:
         print("Error", str(e))
         logger.error("%s" % str(e))
         response = {"stored": False}, 400
-        logger.info("not data found -> %r" % response)
+        logger.info("not data found -> %s" % str(response))
         return response
 
 
@@ -173,7 +173,7 @@ def get_user_data():
     dto = UserDataTransferObject(uid=dao.id, user=dao.user, token=dao.token)
     dto.token = loads(dto.token)
     response = {"id": dto.uid, "user": dto.user, "token": dto.token}, 200
-    logger.info("data found -> %r" % response)
+    logger.info("data found -> %s" % str(response))
     return response
 
 
