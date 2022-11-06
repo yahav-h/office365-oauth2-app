@@ -127,7 +127,8 @@ def first_time_create_token():
         # cleanup all cookies and close admin_driver session
         cleanup(driver)
         return {"stored": True}, 201
-    except:
+    except Exception as e:
+        print("Error", str(e))
         return {"stored": False}, 400
 
 
