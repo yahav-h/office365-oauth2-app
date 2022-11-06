@@ -111,7 +111,8 @@ def refresh_token_for_user():
                 dao.token = dumps(new_token)
                 Session.add(dao)
             dto.token = new_token
-        except:
+        except Exception as e:
+            print("Error", str(e))
             return {}, 400
     return {"id": dto.uid, "user": dto.user, "token": dto.token}, 200
 
