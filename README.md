@@ -5,8 +5,26 @@
     This repository handles the creation of fresh 
     JWT to users who willing to use Office 365 Suite    
 ```
---- 
-## How To
+---
+## Deploy as a Docker
+
+#### 1. Clone Repo
+```shell
+ $ git clone https://github.com/yahav-h/Office365SuiteOAuthApplication.git
+```
+
+#### 2. Build docker image
+```shell
+ $ docker build -t compose-oauth-o365-app .
+```
+
+#### 3. Deploy in container
+```shell
+ $ docker-compose up
+```
+
+---
+## Run as a Script
 
 #### 1. Clone Repo
 ```shell
