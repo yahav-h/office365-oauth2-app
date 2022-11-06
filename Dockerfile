@@ -16,6 +16,6 @@ COPY ./logs/runtime.log /app/logs/runtime.log
 
 RUN pip install -r /app/dependencies.txt
 
-EXPOSE 5000
+EXPOSE 80
 
 CMD python o365_Service.py
