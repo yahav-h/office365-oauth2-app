@@ -49,7 +49,13 @@
   $ ./venv3/bin/python3 ./o365_Auth.py --farm farm-1 --clusters c1,c2,c3 --debug 1 
 ```
 
-#### 5. Starting a Web Server
+#### 5. Update `/etc/hosts` file  
+```shell 
+ $ sudo echo "<OAUTH_O365_CLIENT_IP> oauth-o365.avanan-dev.com" >> /etc/hosts
+ $ sudo echo "<OAUTH_O365_CLIENT_IP> oauth-gsuite.avanan-dev.com" >> /etc/hosts 
+```
+
+#### 6. Starting a Web Server
 ```shell
  # Starting a web server 
  $ ./venv3/bin/python3 ./o365_Service.py
