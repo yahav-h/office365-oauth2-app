@@ -100,10 +100,10 @@ def callback():
     print("[§] JWT Stored!")
     return {"stored": True}, 201
 
-@app.route("/refreshToken", methods=["GET"])
+@app.route("/refreshToken", methods=["POST"])
 def refresh_token_for_user():
     user_mail = request.args.get("email")
-    logger.info("refresh_token_for_user (params: %s)" %user_mail)
+    logger.info("refresh_token_for_user (params: %s)" % user_mail)
     dao = UserDataAccessObject.query.filter_by(user=user_mail).first()
     if not dao:
         logger.info("no such email in database, return ( {}, 404 )")
@@ -134,7 +134,7 @@ def refresh_token_for_user():
             response = {"stored": False}, 400
             logger.info("not data found -> %s" % str(response))
             return response
-    response = {"id": dto.uid, "user": dto.user, "token": dto.token}, 200
+    response = {"stored": True}, 201
     logger.info("data found -> %s" % str(response))
     return response
 
