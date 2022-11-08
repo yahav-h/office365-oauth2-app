@@ -100,7 +100,7 @@ def callback():
     print("[§] JWT Stored!")
     return {"stored": True}, 201
 
-@app.route("/refreshToken", methods=["POST"])
+@app.route("/refreshToken", methods=["GET"])
 def refresh_token_for_user():
     user_mail = request.args.get("email")
     logger.info("refresh_token_for_user (params: %s)" % user_mail)
