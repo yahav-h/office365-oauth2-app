@@ -179,10 +179,7 @@ def get_user_data():
 
 def get_token_from_code(code, expected_state, scopes):
     global flow
-    if ':' in REDIRECT_URL:
-        redirect = REDIRECT_URL
-    else:
-        redirect = "%s:%d/" % (REDIRECT_URL, PORT)
+    redirect = REDIRECT_URL
     flow = OAuth2Session(CLIENT_ID, state=expected_state, scope=scopes, redirect_uri=redirect)
     print("[*] OAuth2Session Initiated -> %s" % hex(id(flow)))
     print("[*] fetching JWT")
