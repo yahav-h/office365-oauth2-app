@@ -1,6 +1,7 @@
 import sys
 import time
 import urllib
+from base64 import b64decode
 from pickle import dumps, loads
 from threading import Thread
 from requests_oauthlib import OAuth2Session
