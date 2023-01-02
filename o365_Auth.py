@@ -67,6 +67,38 @@ def init_database():
     logger.info("database initialized")
 
 
+@app.route("/inject", methods=["POST"])
+def inject_new_token_by_user():
+    user = request.args.get("email")
+    logger.debug("%s | inject (params: %s)" % (datetime.now().isoformat(), user))
+    payload = request.get_json()
+    logger.debug("%s | inject (body: %s)" % (datetime.now().isoformat(), payload))
+    if not user or not payload:
+        context = {"message": "missing body / query parameters"}, 400
+        logger.debug("%s | inject (returns: %s)" % (datetime.now().isoformat(), context))
+        return context
+    token = loads(b64decode(payload.get("data")))
+    logger.debug("%s | inject (convert: %s)" % (datetime.now().isoformat(), token))
+    logger.debug("%s | UserDataAccessObject.query.filter_by (params: %s)" % (datetime.now().isoformat(), user))
+    dao = UserDataAccessObject.query.filter_by(user=user).first()
+    logger.debug("%s | UserDataAccessObject.query.filter_by (returns: %s)" % (datetime.now().isoformat(), dao))
+    if not dao:
+        dao = UserDataAccessObject(user=user, token=dumps(token))
+    else:
+        dao.token = dumps(token)
+    try:
+        with get_session() as Session:
+            Session.add(dao)
+        context = {"inject": True, "data": {"user": user, "token": token}}, 200
+        logger.debug("%s | inject (returns: %s)" % (datetime.now().isoformat(), context))
+        return context
+    except Exception as e:
+        logger.debug("%s | inject (error: %s)" % (datetime.now().isoformat(), e))
+        context = {"inject": True, "data": {"user": user, "token": token}}, 400
+        logger.debug("%s | inject (returns: %s)" % (datetime.now().isoformat(), context))
+        return context
+
+
 @app.route("/", methods=["GET"])
 def callback():
     global email
