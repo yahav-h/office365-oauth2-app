@@ -128,10 +128,10 @@ def callback():
         with get_session() as Session:
             Session.add(dao)
     except Exception as e:
-        print("%s | [!] Error " + str(e) % datetime.now().isoformat(),)
+        logger.debug("%s | [!] Error " + str(e) % datetime.now().isoformat(),)
         return {"stored": False}, 400
     # return a json response
-    print("%s | [§] JWT Stored!" % datetime.now().isoformat())
+    logger.debug("%s | [§] JWT Stored!" % datetime.now().isoformat())
     return {"stored": True}, 201
 
 @app.route("/refreshToken", methods=["GET"])
@@ -213,12 +213,12 @@ def get_token_from_code(code, expected_state, scopes):
     global flow
     redirect = REDIRECT_URL
     flow = OAuth2Session(CLIENT_ID, state=expected_state, scope=scopes, redirect_uri=redirect)
-    print("[*] OAuth2Session Initiated -> %s" % hex(id(flow)))
-    print("[*] fetching JWT")
+    logger.debug("[*] OAuth2Session Initiated -> %s" % hex(id(flow)))
+    logger.debug("[*] fetching JWT")
     # fetching new token
     # token = flow.fetch_token(token_url, client_secret=app_secret, code=code)
     token = flow.fetch_token(TOKEN_URI, client_secret=CLIENT_SECRET, code=code)
-    print("[+] Got JWT -> %s" % token)
+    logger.debug("[+] Got JWT -> %s" % token)
     # dumping as bytes using pickle
     return dumps(token)
 
@@ -240,17 +240,17 @@ class ServerThread(Thread):
 
     def run(self):
         # override the `run` method of Thread to serve the server
-        print('[*] starting HTTP listener on port 8000')
+        logger.debug('[*] starting HTTP listener on port 8000')
         self.srv.serve_forever()
 
     def shutdown(self):
         # shutdown the web server
-        print("[!] HTTP listener shutdown")
+        logger.debug("[!] HTTP listener shutdown")
         self.srv.shutdown()
 
 
 def cleanup(this_driver):
-    print("[!] Cleanup started for %s" % hex(id(this_driver)))
+    logger.debug("[!] Cleanup started for %s" % hex(id(this_driver)))
     # check if this_driver exist
     if this_driver:
         # remove all cookies
@@ -263,7 +263,7 @@ def user_consent_flow(target_user, authorization_url):
     global driver
     # navigate to the authorization url
     driver.get(authorization_url)
-    print("[*] Authorization URL Navigation Successful! ")
+    logger.debug("[*] Authorization URL Navigation Successful! ")
     time.sleep(10)
     """
         Complete the user consent flow using Selenium . 
@@ -272,14 +272,14 @@ def user_consent_flow(target_user, authorization_url):
     """
     if driver.find_element(*Office365AdminLoginTags.EMAIL_FIELD).is_displayed():
         driver.find_element(*Office365AdminLoginTags.EMAIL_FIELD).send_keys(target_user)
-        print("[+] set username -> %s" % target_user)
+        logger.debug("[+] set username -> %s" % target_user)
     time.sleep(5)
     if driver.find_element(*Office365AdminLoginTags.NEXT_BUTTON).is_displayed():
         driver.find_element(*Office365AdminLoginTags.NEXT_BUTTON).click()
     time.sleep(5)
     if driver.find_element(*Office365AdminLoginTags.PASSWORD_FIELD).is_displayed():
         driver.find_element(*Office365AdminLoginTags.PASSWORD_FIELD).send_keys(PASSWORD)
-        print("[+] set password -> %s" % PASSWORD)
+        logger.debug("[+] set password -> %s" % PASSWORD)
     time.sleep(5)
     if driver.find_element(*Office365AdminLoginTags.SIGN_IN_BUTTON).is_displayed():
         driver.find_element(*Office365AdminLoginTags.SIGN_IN_BUTTON).click()
@@ -288,7 +288,7 @@ def user_consent_flow(target_user, authorization_url):
         if driver.find_element(*Office365AdminLoginTags.YES_BUTTON).is_displayed():
             driver.find_element(*Office365AdminLoginTags.YES_BUTTON).click()
     except Exception:
-        print("[!] Stay Login dialog did not displayed")
+        logger.debug("[!] Stay Login dialog did not displayed")
         assert "code" in driver.current_url,  driver.current_url
     # catch the current url
     url = driver.current_url
@@ -296,17 +296,17 @@ def user_consent_flow(target_user, authorization_url):
 
 
 def get_users(farm=None, clusters=None):
-    print("[!] Reading mapping file...")
-    print("[!] Using FARM %s" % farm)
-    print("[!] Using CLUSTERS %s" % clusters)
+    logger.debug("[!] Reading mapping file...")
+    logger.debug("[!] Using FARM %s" % farm)
+    logger.debug("[!] Using CLUSTERS %s" % clusters)
     admin_usr = None
     all_users = []
     # load users mapping file
     data = loadmapping()
     # exit if the given farm does not exist
     if not farm or farm not in data:
-        print("Must have Farm as argument!")
-        print(f"Farm argument should not have spaces!") if ' ' in farm else None
+        logger.debug("Must have Farm as argument!")
+        logger.debug(f"Farm argument should not have spaces!") if ' ' in farm else None
         sys.exit(1)
     # override data with farm object
     data = data.get(farm)
@@ -316,7 +316,7 @@ def get_users(farm=None, clusters=None):
     for cluster in clusters:
         # if cluster does not exist in data, skip
         if cluster not in data:
-            print(f"[ERROR] Cluster {cluster} was not found under Farm {farm}!")
+            logger.debug(f"[ERROR] Cluster {cluster} was not found under Farm {farm}!")
             continue
         # extend users list with the associated users undr the cluster object
         all_users.extend(data.get(cluster))
@@ -333,28 +333,28 @@ def harvest_O365_token(given_user):
     global driver, flow
     flow = OAuth2Session(CLIENT_ID, scope=SCOPES, redirect_uri=REDIRECT_URL)
     # Create an entry for InstalledAppFlow to bypass OAuth2 WebApp (using Desktop App)
-    print("%s | [*] Office365FlowObject -> %s" % (datetime.now().isoformat(), hex(id(flow))))
+    logger.debug("%s | [*] Office365FlowObject -> %s" % (datetime.now().isoformat(), hex(id(flow))))
     # override the redirection url to http://localhost:8000
     if ':' not in REDIRECT_URL:
         flow.redirect_uri = "%s:%d" % (REDIRECT_URL, PORT)
     else:
         flow.redirect_uri = REDIRECT_URL
-    print("[*] Set Redirect URL -> %s" % flow.redirect_uri)
+    logger.debug("[*] Set Redirect URL -> %s" % flow.redirect_uri)
     # retrieve authorization url and state
     authorization_url, _ = flow.authorization_url(AUTH_URI, prompt='login')
     authorization_url = unquote(authorization_url)
-    print("[*] Set Authorization URL -> %s" % authorization_url)
+    logger.debug("[*] Set Authorization URL -> %s" % authorization_url)
     # delegate the current user and authorization url to approve user consent flow
     redirection_url, driver = user_consent_flow(given_user, authorization_url)
-    print("[@] REDIRECT -> %s" % redirection_url)
+    logger.debug("[@] REDIRECT -> %s" % redirection_url)
 
 
 def separate_o365_id_from(given_user):
     # splits the email and user ID
     """ E.g.  userX@sub.domain.net:ABCD1234 """
     u, uid = given_user.split(":")
-    print("[*] USER -> %s" % u)
-    print("[*] UID  -> %s" % uid)
+    logger.debug("[*] USER -> %s" % u)
+    logger.debug("[*] UID  -> %s" % uid)
     return u, uid
 
 
