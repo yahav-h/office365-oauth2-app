@@ -1,4 +1,4 @@
-from o365_Auth import app
+from o365_Auth import app, HOST, PORT
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=80)
+    app.run(host=HOST, port=PORT)
