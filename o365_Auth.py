@@ -146,7 +146,7 @@ def refresh_token_for_user():
     dto = UserDataTransferObject(uid=dao.id, user=dao.user, token=dao.token)
     dto.token = loads(dto.token)
     now = time.time()
-    expire_time = dto.token.get('expires_at') - 300
+    expire_time = dto.token.get('expires_in') - 300
     if now >= expire_time:
         aad_auth = OAuth2Session(
             CLIENT_ID, token=dto.token,
