@@ -5,5 +5,5 @@ class Office365AdminLoginTags:
     NEXT_BUTTON = ("xpath", './/input[contains(@type, "submit") and contains(@value, "Next")]')
     PASSWORD_FIELD = ("xpath", './/input[contains(@type, "password") or contains(@name, "password")]')
     SIGN_IN_BUTTON = ("xpath", './/input[contains(@type, "submit") and contains(@value, "Sign in")]')
-    YES_BUTTON = ("xpath", './/input[contains(@value, "Yes")]')
+    YES_BUTTON = ("xpath", './/input[contains(@value, "Yes") or contains(@data-report-value, "Submit")]')
 
