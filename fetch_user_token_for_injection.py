@@ -64,7 +64,7 @@ def oauth2callback():
         expected_state = flask.request.args.get('state')
         try:
             aad_auth = OAuth2Session(
-                CLIENT_ID, state=expected_state, scope=SCOPES, redirect_uri=REDIRECT_URI
+                CLIENT_ID, state=expected_state, scope=None, redirect_uri=REDIRECT_URI
             )
             jwt = aad_auth.fetch_token(TOKEN_URI, client_secret=CLIENT_SECRET, code=auth_code)
             data = pickle.dumps(jwt)
